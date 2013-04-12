@@ -50,6 +50,7 @@ func openBrowser(url_ string) {
 	if err != nil {
 		log.Fatal("failed to start command:", err)
 	}
+	println(url_)
 	defer p.Release()
 }
 
