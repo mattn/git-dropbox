@@ -32,6 +32,8 @@ type resStore struct {
 	Path string `json:"path"`
 }
 
+var stdin = os.Stdin
+
 func openBrowser(url_ string) {
 	cmd := "xdg-open"
 	args := []string{cmd, url_}
@@ -46,7 +48,7 @@ func openBrowser(url_ string) {
 	if err != nil {
 		log.Fatal("command not found:", err)
 	}
-	p, err := os.StartProcess(cmd, args, &os.ProcAttr{Dir: "", Files: []*os.File{nil, nil, os.Stderr}})
+	p, err := os.StartProcess(cmd, args, &os.ProcAttr{Dir: "", Files: []*os.File{nil, stdin, os.Stderr}})
 	if err != nil {
 		log.Fatal("failed to start command:", err)
 	}
@@ -343,11 +345,7 @@ func list() {
 	}
 }
 
-func main() {
-	if len(os.Args) == 1 {
-		usage()
-	}
-
+func readyStdin() {
 	temp, err := ioutil.TempFile("", "")
 	if err != nil {
 		log.Fatal(err.Error())
@@ -360,10 +358,17 @@ func main() {
 	io.Copy(temp, os.Stdin)
 	os.Stdin = temp
 	os.Stdin.Seek(0, os.SEEK_SET)
+}
+
+func main() {
+	if len(os.Args) == 1 {
+		usage()
+	}
 
 	hex := ""
 	if os.Args[1] == "load" {
 		if len(os.Args) == 2 {
+			readyStdin()
 			hash, err := ioutil.ReadAll(os.Stdin)
 			if err != nil {
 				log.Fatal(err.Error())
@@ -375,6 +380,7 @@ func main() {
 
 		load(hex)
 	} else if os.Args[1] == "store" {
+		readyStdin()
 		if len(os.Args) == 2 {
 			sha1h := sha1.New()
 			_, err := io.Copy(sha1h, os.Stdin)
@@ -389,6 +395,7 @@ func main() {
 		store(hex)
 	} else if os.Args[1] == "drop" {
 		if len(os.Args) == 2 {
+			readyStdin()
 			hash, err := ioutil.ReadAll(os.Stdin)
 			if err != nil {
 				log.Fatal(err)
