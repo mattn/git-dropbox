@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/sha1"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"github.com/garyburd/go-oauth/oauth"
 	"io"
@@ -18,6 +19,8 @@ import (
 	"runtime"
 	"strings"
 )
+
+var nocache = flag.Bool("nocache", false, "Don't store caches")
 
 type resList struct {
 	Contents []struct {
@@ -195,13 +198,16 @@ func usage() {
 }
 
 func load(hex string) {
-	dirpath, filename := cachePath(hex)
-	if stream, err := os.Open(filepath.Join(dirpath, filename)); err == nil {
-		_, err = io.Copy(os.Stdout, stream)
-		if err != nil {
-			log.Fatal(err)
+	var dirpath, filename string
+	if *nocache == false {
+		dirpath, filename = cachePath(hex)
+		if stream, err := os.Open(filepath.Join(dirpath, filename)); err == nil {
+			_, err = io.Copy(os.Stdout, stream)
+			if err != nil {
+				log.Fatal(err)
+			}
+			return
 		}
-		return
 	}
 
 	client, cred, err := getClient()
@@ -218,28 +224,44 @@ func load(hex string) {
 	}
 	defer res.Body.Close()
 
-	file, err := os.Create(filepath.Join(dirpath, filename))
-	if err != nil {
-		log.Fatal(err.Error())
+	var writer io.Writer
+	if *nocache == false {
+		file, err := os.Create(filepath.Join(dirpath, filename))
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+		writer = io.MultiWriter(os.Stdout, file)
+	} else {
+		writer = os.Stdout
 	}
-	writer := io.MultiWriter(os.Stdout, file)
 	io.Copy(writer, res.Body)
 }
 
 func store(hex string) {
-	dirpath, filename := cachePath(hex)
-	file, err := os.Create(filepath.Join(dirpath, filename))
-	if err != nil {
-		log.Fatal(err.Error())
+	var dirpath, filename string
+	var file io.Writer
+	var err error
+
+	if *nocache == false {
+		dirpath, filename = cachePath(hex)
+		file, err = os.Create(filepath.Join(dirpath, filename))
+		if err != nil {
+			log.Fatal(err.Error())
+		}
 	}
 
-	_, err = os.Stdin.Seek(0, os.SEEK_SET)
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-	size, err := io.Copy(file, os.Stdin)
-	if err != nil {
-		log.Fatal(err.Error())
+	var size int64
+	if *nocache == false {
+		_, err = os.Stdin.Seek(0, os.SEEK_SET)
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+		size, err = io.Copy(file, os.Stdin)
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+	} else {
+		size, err = os.Stdin.Seek(0, os.SEEK_END)
 	}
 
 	client, cred, err := getClient()
@@ -289,6 +311,14 @@ func drop(hex string) {
 		log.Fatal(err.Error())
 	}
 	defer res.Body.Close()
+
+	if *nocache == false {
+		dirpath, filename := cachePath(hex)
+		err = os.Remove(filepath.Join(dirpath, filename))
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+	}
 }
 
 func list() {
