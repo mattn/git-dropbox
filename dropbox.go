@@ -292,7 +292,7 @@ func store(hex string) {
 	defer res.Body.Close()
 	var obj resStore
 	json.NewDecoder(res.Body).Decode(&obj)
-	fmt.Println(obj.Path)
+	fmt.Println(obj.Path[1:])
 }
 
 func drop(hex string) {
