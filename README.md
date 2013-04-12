@@ -41,6 +41,13 @@ Create new file `.gitattribute` and put like follow:
 
 This mean which files are stored on your dropbox.
 
+## Warning
+
+Note that don't cheating, cracking, or any other corrections. This
+application store application-token that i created. If you had corrections,
+and dropbox offcial stop and block this token, all users will have to
+replace new application token.
+
 ## Author
 
 Yasuhiro Matsumoto (mattn.jp@gmail.com)
