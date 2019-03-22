@@ -54,7 +54,7 @@ Yasuhiro Matsumoto (mattn.jp@gmail.com)
 
 ## Thanks
 
-This is based on @mechane's idea.
+This is based on @methane's idea.
 
 https://github.com/methane/git-largefiles
 
